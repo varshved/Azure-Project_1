@@ -1,0 +1,41 @@
+SELECT * FROM Bankcustomer
+
+--Total Subscribers by Job Type
+SELECT job, COUNT(*) AS TotalSubscribers  
+FROM dbo.Bankcustomer  
+WHERE deposit = 'yes'  
+GROUP BY job  
+ORDER BY TotalSubscribers DESC;  
+
+--Subscription Rate by Education Level
+SELECT education,   
+       COUNT(*) AS TotalCustomers,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS Subscribers  
+FROM dbo.Bankcustomer  
+GROUP BY education;  
+
+-- Campaign Contacts vs. Success Rate
+SELECT campaign,  
+       COUNT(*) AS TotalContacts,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS SuccessfulSubscriptions  
+FROM dbo.Bankcustomer  
+GROUP BY campaign;  
+
+--Marital Status vs. Deposit Subscription
+SELECT marital,  
+       COUNT(*) AS TotalCustomers,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS Subscribers  
+FROM dbo.Bankcustomer  
+GROUP BY marital;  
+
+--Personal Loan Impact on Subscriptions
+SELECT loan,  
+       COUNT(*) AS TotalCustomers,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS Subscribers  
+FROM dbo.Bankcustomer  
+GROUP BY loan;  
+
+
+
+
+
