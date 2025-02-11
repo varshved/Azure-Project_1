@@ -1,0 +1,32 @@
+CREATE VIEW JobWiseSubscribers AS 
+SELECT job, COUNT(*) AS TotalSubscribers  
+FROM dbo.Bankcustomer  
+WHERE deposit = 'yes'  
+GROUP BY job;
+
+CREATE VIEW EducationWiseSubscribers AS 
+SELECT education, COUNT(*) AS TotalCustomers,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS Subscribers  
+FROM dbo.Bankcustomer  
+GROUP BY education;
+
+CREATE VIEW CampaignSuccess AS 
+SELECT campaign, COUNT(*) AS TotalContacts,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS SuccessfulSubscriptions  
+FROM dbo.Bankcustomer  
+GROUP BY campaign;
+
+CREATE VIEW MaritalStatusSubscribers AS 
+SELECT marital, COUNT(*) AS TotalCustomers,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS Subscribers  
+FROM dbo.Bankcustomer  
+GROUP BY marital;
+
+CREATE VIEW LoanImpactSubscribers AS 
+SELECT loan, COUNT(*) AS TotalCustomers,  
+       SUM(CASE WHEN deposit = 'yes' THEN 1 ELSE 0 END) AS Subscribers  
+FROM dbo.Bankcustomer  
+GROUP BY loan;
+
+
+
