@@ -1,0 +1,50 @@
+-- Drop the existing external table if it exists
+IF EXISTS (SELECT * FROM sys.external_tables WHERE name = 'Bankcustomer')
+    DROP EXTERNAL TABLE dbo.Bankcustomer
+GO
+
+-- Create the external file format with HEADER_ROW = TRUE
+IF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'SynapseDelimitedTextFormat') 
+    CREATE EXTERNAL FILE FORMAT [SynapseDelimitedTextFormat] 
+    WITH ( 
+        FORMAT_TYPE = DELIMITEDTEXT,
+        FORMAT_OPTIONS (
+            FIELD_TERMINATOR = ',',
+            FIRST_ROW = 2, -- Skip the header row (if HEADER_ROW = TRUE is not supported)
+            USE_TYPE_DEFAULT = FALSE
+        )
+    )
+GO
+
+-- Create the external data source if it doesn't exist
+IF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'silverdata_loanstoragedata_dfs_core_windows_net') 
+    CREATE EXTERNAL DATA SOURCE [silverdata_loanstoragedata_dfs_core_windows_net] 
+    WITH (
+        LOCATION = 'abfss://silverdata@loanstoragedata.dfs.core.windows.net' 
+    )
+GO
+
+Drop EXTERNAL TABLE Bankcustomer
+-- Create the external table with the same structure
+CREATE EXTERNAL TABLE dbo.Bankcustomer (
+    [age] nvarchar(4000),
+    [job] nvarchar(4000),
+    [marital] nvarchar(4000),
+    [education] nvarchar(4000),
+    [default] nvarchar(4000),
+    [balance] nvarchar(4000),
+    [housing] nvarchar(4000),
+    [loan] nvarchar(4000),
+    [duration] nvarchar(4000),
+    [campaign] nvarchar(4000),
+    [deposit] nvarchar(4000) -- Column 11
+)
+WITH (
+    LOCATION = 'silver_data/part-00000-tid-3311448612446364181-aba9ab18-02c4-4945-b34f-a8ecf05db6e9-58-1-c000.csv',
+    DATA_SOURCE = [silverdata_loanstoragedata_dfs_core_windows_net],
+    FILE_FORMAT = [SynapseDelimitedTextFormat]
+)
+GO
+-- Query the top 100 rows from the external table
+SELECT TOP 100 * FROM dbo.Bankcustomer
+GO
