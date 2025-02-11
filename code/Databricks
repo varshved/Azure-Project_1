@@ -1,0 +1,153 @@
+{
+  "type": "DatabricksNotebook",
+  "linkedServiceName": "AzureDatabricksLinkedService",
+  "notebookPath": "/Shared/bank_data_processing",
+  "baseParameters": { "input_path": "/mnt/raw-data/bank.csv" }
+}
+
+dbutils.fs.mount(
+  source = "wasbs://rawdata@loanstoragedata.blob.core.windows.net",
+  mount_point = "/mnt/rawdata",
+  extra_configs = {"fs.azure.account.key.loanstoragedata.blob.core.windows.net": "iFGodHODy1VhMBev39oivy0DHhbycR1usOh3pSm529LgF96nf1Xw9EjslKrc/iPv4OSn6FR+O4+U+ASthpuSOg=="}
+)
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, when, concat_ws
+
+
+df = df.drop('contact','day','month','pdays','previous','poutcome')
+df.show()
+(1) Spark Jobs
+ 
+df:pyspark.sql.dataframe.DataFrame = [age: integer, job: string ... 9 more fields]
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+|age|        job| marital|education|default|balance|housing|loan|duration|campaign|deposit|
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+| 59|     admin.| married|secondary|     no|   2343|    yes|  no|    1042|       1|    yes|
+| 56|     admin.| married|secondary|     no|     45|     no|  no|    1467|       1|    yes|
+| 41| technician| married|secondary|     no|   1270|    yes|  no|    1389|       1|    yes|
+| 55|   services| married|secondary|     no|   2476|    yes|  no|     579|       1|    yes|
+| 54|     admin.| married| tertiary|     no|    184|     no|  no|     673|       2|    yes|
+| 42| management|  single| tertiary|     no|      0|    yes| yes|     562|       2|    yes|
+| 56| management| married| tertiary|     no|    830|    yes| yes|    1201|       1|    yes|
+| 60|    retired|divorced|secondary|     no|    545|    yes|  no|    1030|       1|    yes|
+| 37| technician| married|secondary|     no|      1|    yes|  no|     608|       1|    yes|
+| 28|   services|  single|secondary|     no|   5090|    yes|  no|    1297|       3|    yes|
+| 38|     admin.|  single|secondary|     no|    100|    yes|  no|     786|       1|    yes|
+| 30|blue-collar| married|secondary|     no|    309|    yes|  no|    1574|       2|    yes|
+| 29| management| married| tertiary|     no|    199|    yes| yes|    1689|       4|    yes|
+| 46|blue-collar|  single| tertiary|     no|    460|    yes|  no|    1102|       2|    yes|
+| 31| technician|  single| tertiary|     no|    703|    yes|  no|     943|       2|    yes|
+| 35| management|divorced| tertiary|     no|   3837|    yes|  no|    1084|       1|    yes|
+| 32|blue-collar|  single|  primary|     no|    611|    yes|  no|     541|       3|    yes|
+| 49|   services| married|secondary|     no|     -8|    yes|  no|    1119|       1|    yes|
+| 41|     admin.| married|secondary|     no|     55|    yes|  no|    1120|       2|    yes|
+| 49|     admin.|divorced|secondary|     no|    168|    yes| yes|     513|       1|    yes|
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+only showing top 20 rows
+
+df = df.na.drop()
+df = df.fillna({"balance": 0, "duration": 0, "campaign": 1})
+
+df.show()
+
+(1) Spark Jobs
+ 
+df:pyspark.sql.dataframe.DataFrame = [age: integer, job: string ... 9 more fields]
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+|age|        job| marital|education|default|balance|housing|loan|duration|campaign|deposit|
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+| 59|     admin.| married|secondary|     no|   2343|    yes|  no|    1042|       1|    yes|
+| 56|     admin.| married|secondary|     no|     45|     no|  no|    1467|       1|    yes|
+| 41| technician| married|secondary|     no|   1270|    yes|  no|    1389|       1|    yes|
+| 55|   services| married|secondary|     no|   2476|    yes|  no|     579|       1|    yes|
+| 54|     admin.| married| tertiary|     no|    184|     no|  no|     673|       2|    yes|
+| 42| management|  single| tertiary|     no|      0|    yes| yes|     562|       2|    yes|
+| 56| management| married| tertiary|     no|    830|    yes| yes|    1201|       1|    yes|
+| 60|    retired|divorced|secondary|     no|    545|    yes|  no|    1030|       1|    yes|
+| 37| technician| married|secondary|     no|      1|    yes|  no|     608|       1|    yes|
+| 28|   services|  single|secondary|     no|   5090|    yes|  no|    1297|       3|    yes|
+| 38|     admin.|  single|secondary|     no|    100|    yes|  no|     786|       1|    yes|
+| 30|blue-collar| married|secondary|     no|    309|    yes|  no|    1574|       2|    yes|
+| 29| management| married| tertiary|     no|    199|    yes| yes|    1689|       4|    yes|
+| 46|blue-collar|  single| tertiary|     no|    460|    yes|  no|    1102|       2|    yes|
+| 31| technician|  single| tertiary|     no|    703|    yes|  no|     943|       2|    yes|
+| 35| management|divorced| tertiary|     no|   3837|    yes|  no|    1084|       1|    yes|
+| 32|blue-collar|  single|  primary|     no|    611|    yes|  no|     541|       3|    yes|
+| 49|   services| married|secondary|     no|     -8|    yes|  no|    1119|       1|    yes|
+| 41|     admin.| married|secondary|     no|     55|    yes|  no|    1120|       2|    yes|
+| 49|     admin.|divorced|secondary|     no|    168|    yes| yes|     513|       1|    yes|
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+only showing top 20 rows
+
+df = df.withColumn(
+    "age_group",
+    when(col("age") < 30, "Young Adult")
+    .when((col("age") >= 30) & (col("age") < 50), "Middle Aged")
+    .otherwise("Senior")
+)
+df.show()
+(1) Spark Jobs
+ 
+df:pyspark.sql.dataframe.DataFrame = [age: integer, job: string ... 10 more fields]
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+-----------+
+|age|        job| marital|education|default|balance|housing|loan|duration|campaign|deposit|  age_group|
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+-----------+
+| 59|     admin.| married|secondary|     no|   2343|    yes|  no|    1042|       1|    yes|     Senior|
+| 56|     admin.| married|secondary|     no|     45|     no|  no|    1467|       1|    yes|     Senior|
+| 41| technician| married|secondary|     no|   1270|    yes|  no|    1389|       1|    yes|Middle Aged|
+| 55|   services| married|secondary|     no|   2476|    yes|  no|     579|       1|    yes|     Senior|
+| 54|     admin.| married| tertiary|     no|    184|     no|  no|     673|       2|    yes|     Senior|
+| 42| management|  single| tertiary|     no|      0|    yes| yes|     562|       2|    yes|Middle Aged|
+| 56| management| married| tertiary|     no|    830|    yes| yes|    1201|       1|    yes|     Senior|
+| 60|    retired|divorced|secondary|     no|    545|    yes|  no|    1030|       1|    yes|     Senior|
+| 37| technician| married|secondary|     no|      1|    yes|  no|     608|       1|    yes|Middle Aged|
+| 28|   services|  single|secondary|     no|   5090|    yes|  no|    1297|       3|    yes|Young Adult|
+| 38|     admin.|  single|secondary|     no|    100|    yes|  no|     786|       1|    yes|Middle Aged|
+| 30|blue-collar| married|secondary|     no|    309|    yes|  no|    1574|       2|    yes|Middle Aged|
+| 29| management| married| tertiary|     no|    199|    yes| yes|    1689|       4|    yes|Young Adult|
+| 46|blue-collar|  single| tertiary|     no|    460|    yes|  no|    1102|       2|    yes|Middle Aged|
+| 31| technician|  single| tertiary|     no|    703|    yes|  no|     943|       2|    yes|Middle Aged|
+| 35| management|divorced| tertiary|     no|   3837|    yes|  no|    1084|       1|    yes|Middle Aged|
+| 32|blue-collar|  single|  primary|     no|    611|    yes|  no|     541|       3|    yes|Middle Aged|
+| 49|   services| married|secondary|     no|     -8|    yes|  no|    1119|       1|    yes|Middle Aged|
+| 41|     admin.| married|secondary|     no|     55|    yes|  no|    1120|       2|    yes|Middle Aged|
+| 49|     admin.|divorced|secondary|     no|    168|    yes| yes|     513|       1|    yes|Middle Aged|
++---+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+-----------+
+only showing top 20 rows
+
+df = df.withColumn("age", concat_ws(" - ", col("age"), col("age_group")))
+df = df.drop("age_group")
+df.show()
+(1) Spark Jobs
+ 
+df:pyspark.sql.dataframe.DataFrame = [age: string, job: string ... 9 more fields]
++----------------+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+|             age|        job| marital|education|default|balance|housing|loan|duration|campaign|deposit|
++----------------+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+|     59 - Senior|     admin.| married|secondary|     no|   2343|    yes|  no|    1042|       1|    yes|
+|     56 - Senior|     admin.| married|secondary|     no|     45|     no|  no|    1467|       1|    yes|
+|41 - Middle Aged| technician| married|secondary|     no|   1270|    yes|  no|    1389|       1|    yes|
+|     55 - Senior|   services| married|secondary|     no|   2476|    yes|  no|     579|       1|    yes|
+|     54 - Senior|     admin.| married| tertiary|     no|    184|     no|  no|     673|       2|    yes|
+|42 - Middle Aged| management|  single| tertiary|     no|      0|    yes| yes|     562|       2|    yes|
+|     56 - Senior| management| married| tertiary|     no|    830|    yes| yes|    1201|       1|    yes|
+|     60 - Senior|    retired|divorced|secondary|     no|    545|    yes|  no|    1030|       1|    yes|
+|37 - Middle Aged| technician| married|secondary|     no|      1|    yes|  no|     608|       1|    yes|
+|28 - Young Adult|   services|  single|secondary|     no|   5090|    yes|  no|    1297|       3|    yes|
+|38 - Middle Aged|     admin.|  single|secondary|     no|    100|    yes|  no|     786|       1|    yes|
+|30 - Middle Aged|blue-collar| married|secondary|     no|    309|    yes|  no|    1574|       2|    yes|
+|29 - Young Adult| management| married| tertiary|     no|    199|    yes| yes|    1689|       4|    yes|
+|46 - Middle Aged|blue-collar|  single| tertiary|     no|    460|    yes|  no|    1102|       2|    yes|
+|31 - Middle Aged| technician|  single| tertiary|     no|    703|    yes|  no|     943|       2|    yes|
+|35 - Middle Aged| management|divorced| tertiary|     no|   3837|    yes|  no|    1084|       1|    yes|
+|32 - Middle Aged|blue-collar|  single|  primary|     no|    611|    yes|  no|     541|       3|    yes|
+|49 - Middle Aged|   services| married|secondary|     no|     -8|    yes|  no|    1119|       1|    yes|
+|41 - Middle Aged|     admin.| married|secondary|     no|     55|    yes|  no|    1120|       2|    yes|
+|49 - Middle Aged|     admin.|divorced|secondary|     no|    168|    yes| yes|     513|       1|    yes|
++----------------+-----------+--------+---------+-------+-------+-------+----+--------+--------+-------+
+only showing top 20 rows
+
+
